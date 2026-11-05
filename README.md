@@ -17,7 +17,7 @@ A personal blue-team lab built to practice the day-to-day skills of a SOC analys
 | Machine | Acer Nitro 5 (dedicated to the lab) |
 | CPU | AMD Ryzen 7 2700U (4 cores / 8 threads, AMD-V) |
 | RAM | ~14 GiB usable |
-| System disk | 116 GB SSD (Ubuntu, Wazuh VM) |
+| System disk | 116 GB SSD (Ubuntu, Splunk VM) |
 | Lab disk | 1 TB HDD, ext4, mounted at `/mnt/soc-lab` (other VM disks, ISOs) |
 | Host OS | Ubuntu 26.04.1 LTS |
 
@@ -31,10 +31,10 @@ Host: Ubuntu 26.04 LTS  (KVM + QEMU + libvirt)
 ├── default            NAT network, internet access (installs/updates only)
 │
 └── soc-lab-net        192.168.100.0/24, ISOLATED (no forwarding to LAN/internet)
-    ├── Wazuh server   Ubuntu Server 24.04   [planned]  (second NIC on "default")
-    ├── Kali Linux     attacker              [planned]
-    ├── Metasploitable 2   intentionally vulnerable target   [planned]
-    └── Windows endpoint   [planned]
+    ├── Splunk Enterprise   Ubuntu Server 24.04   [planned]  (second NIC on "default")
+    ├── Kali Linux          attacker              [planned]
+    ├── Metasploitable 2    intentionally vulnerable target   [planned]
+    └── Windows endpoint    [planned]  (Splunk Universal Forwarder)
 ```
 
 ## Design decisions
@@ -45,7 +45,7 @@ Host: Ubuntu 26.04 LTS  (KVM + QEMU + libvirt)
 
 **Isolated lab network.** Metasploitable is vulnerable on purpose, so the attacker and target machines live on a network with no route to the home LAN or the internet. This is done by defining the libvirt network without a `<forward>` element.
 
-**Wazuh on Ubuntu Server 24.04.** The Wazuh server documentation lists Ubuntu up to 24.04 as supported, so the SIEM VM uses 24.04 LTS even though the host runs 26.04.
+**Splunk on Ubuntu Server 24.04. Splunk’s system requirements list Ubuntu 24.04 (x86-64) as a supported platform for Splunk Enterprise and the universal forwarder, so the SIEM VM uses 24.04 LTS even though the host runs 26.04. Running Splunk in a VM can reduce indexing and search performance, which is acceptable for a lab with low data volume.
 
 **Verified downloads.** Every image was checked against its published SHA-256 hash before use.
 
@@ -149,9 +149,10 @@ The storage directory is owned by root with mode `711` (`drwx--x--x`), so my use
 - [x] Download and verify images (Ubuntu Server 24.04, Kali, Metasploitable 2)
 - [x] Prepare Kali and Metasploitable disks
 - [ ] Create the Metasploitable and Kali VMs, confirm they reach each other on `soc-lab-net`
-- [ ] Deploy Wazuh (all-in-one) on Ubuntu Server 24.04
+- [ ] Deploy Splunk Enterprise (trial/free license) on Ubuntu Server 24.04
+- [ ] Install the Splunk Universal Forwarder on Linux and Windows endpoints
 - [ ] Enroll agents (Linux and Windows endpoints)
-- [ ] Attack scenarios (scans, brute force, exploitation) with one write-up per scenario: attack → alert → investigation → conclusion
+- [ ] Attack scenarios (scans, brute force, exploitation) one write-up per scenario: attack → SPL search → alert → investigation → conclusion
 - [ ] Add Suricata (network IDS)
 - [ ] Incident management and automation (TheHive, Shuffle)
 
