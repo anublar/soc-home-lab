@@ -148,7 +148,9 @@ The storage directory is owned by root with mode `711` (`drwx--x--x`), so my use
 - [x] Isolated virtual network
 - [x] Download and verify images (Ubuntu Server 24.04, Kali, Metasploitable 2)
 - [x] Prepare Kali and Metasploitable disks
-- [ ] Create the Metasploitable and Kali VMs, confirm they reach each other on `soc-lab-net`
+- [X] Create the Metasploitable and Kali VMs, confirm they reach each other on `soc-lab-net`
+- [x] First reconnaissance scan
+- [x] Baseline snapshots of both VMs
 - [ ] Deploy Splunk Enterprise (trial/free license) on Ubuntu Server 24.04
 - [ ] Install the Splunk Universal Forwarder on Linux and Windows endpoints
 - [ ] Enroll agents (Linux and Windows endpoints)
