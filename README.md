@@ -2,7 +2,7 @@
 
 A personal blue-team lab built to practice the day-to-day skills of a SOC analyst (L1): collecting logs, generating realistic attack activity, and investigating the alerts it produces.
 
-> **Status: work in progress.** Phase 1 (virtualization foundation) is complete. Later phases are listed in the [roadmap](#roadmap) and are marked as planned until they are actually built and documented.
+> **Status: work in progress.** Phase 1 and 2 are complete. Later phases are listed in the [roadmap](#roadmap) and are marked as planned until they are actually built and documented.
 
 ## Goals
 
@@ -21,7 +21,7 @@ A personal blue-team lab built to practice the day-to-day skills of a SOC analys
 | Lab disk | 1 TB HDD, ext4, mounted at `/mnt/soc-lab` (other VM disks, ISOs) |
 | Host OS | Ubuntu 26.04.1 LTS |
 
-The CPU is the main constraint, so not every VM will run at the same time: Wazuh plus one or two other machines per session.
+The CPU is the main constraint, so not every VM will run at the same time: Splunk plus one or two other machines per session.
 
 ## Architecture
 
@@ -32,9 +32,9 @@ Host: Ubuntu 26.04 LTS  (KVM + QEMU + libvirt)
 │
 └── soc-lab-net        192.168.100.0/24, ISOLATED (no forwarding to LAN/internet)
     ├── Splunk Enterprise   Ubuntu Server 24.04   [planned]  (second NIC on "default")
-    ├── Kali Linux          attacker              [planned]
-    ├── Metasploitable 2    intentionally vulnerable target   [planned]
-    └── Windows endpoint    [planned]  (Splunk Universal Forwarder)
+    ├── Kali Linux          attacker              [created]
+    ├── Metasploitable 2    intentionally vulnerable target   [created]
+    └── Windows endpoint    [created]  (Splunk Universal Forwarder)
 ```
 
 ## Design decisions
@@ -45,7 +45,7 @@ Host: Ubuntu 26.04 LTS  (KVM + QEMU + libvirt)
 
 **Isolated lab network.** Metasploitable is vulnerable on purpose, so the attacker and target machines live on a network with no route to the home LAN or the internet. This is done by defining the libvirt network without a `<forward>` element.
 
-**Splunk on Ubuntu Server 24.04. Splunk’s system requirements list Ubuntu 24.04 (x86-64) as a supported platform for Splunk Enterprise and the universal forwarder, so the SIEM VM uses 24.04 LTS even though the host runs 26.04. Running Splunk in a VM can reduce indexing and search performance, which is acceptable for a lab with low data volume.
+**Splunk on Ubuntu Server 24.04.** Splunk’s system requirements list Ubuntu 24.04 (x86-64) as a supported platform for Splunk Enterprise and the universal forwarder, so the SIEM VM uses 24.04 LTS even though the host runs 26.04. Running Splunk in a VM can reduce indexing and search performance, which is acceptable for a lab with low data volume.
 
 **Verified downloads.** Every image was checked against its published SHA-256 hash before use.
 
@@ -146,7 +146,7 @@ The storage directory is owned by root with mode `711` (`drwx--x--x`), so my use
 | VM | RAM / CPU | Disk bus | NIC model | Firmware |
 |---|---|---|---|---|
 | metasploitable2 | 1 GiB / 1 | IDE | e1000 | BIOS |
-| kali | 2 GiB / 2 | VirtIO | VirtIO | default of the image |
+| kali | 2 GiB / 2 | VirtIO | VirtIO | BIOS |
 
 Metasploitable is a 2008-era system, so it needed legacy virtual hardware (IDE disk, e1000 NIC) to boot. Kali has a modern kernel and works with VirtIO defaults.
 
@@ -175,9 +175,9 @@ That range belongs to libvirt's `default` NAT network, so the VM had been attach
 
 `nmap -sV` against Metasploitable (from Kali, inside the isolated network) found ~23 open TCP ports, including FTP, Telnet, SMB, NFS, MySQL, PostgreSQL, VNC, and the legacy r-services (512–514). Services were grouped by risk: remote access (cleartext vs encrypted), file sharing, databases, and web.
 
-Key takeaway: *open* is a technical state (a process is listening); *exposed* depends
+Key takeaway: *open* is a technical state (a process is listening); *exposed* depends on who can reach it. Metasploitable has dozens of open ports but none are exposed, because the network has no way out.
 
-## Roadmap update
+## Roadmap
 
 - [x] Verify KVM and install the virtualization stack
 - [x] Storage pool on a dedicated disk
@@ -189,7 +189,6 @@ Key takeaway: *open* is a technical state (a process is listening); *exposed* de
 - [x] Baseline snapshots of both VMs
 - [ ] Deploy Splunk Enterprise (trial/free license) on Ubuntu Server 24.04
 - [ ] Install the Splunk Universal Forwarder on Linux and Windows endpoints
-- [ ] Enroll agents (Linux and Windows endpoints)
 - [ ] Attack scenarios (scans, brute force, exploitation) one write-up per scenario: attack → SPL search → alert → investigation → conclusion
 - [ ] Add Suricata (network IDS)
 - [ ] Incident management and automation (TheHive, Shuffle)
