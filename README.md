@@ -141,7 +141,43 @@ virsh pool-refresh soc-lab-vms && virsh vol-list soc-lab-vms
 **`sudo chown ... *.qcow2` failed with "No such file or directory".**
 The storage directory is owned by root with mode `711` (`drwx--x--x`), so my user can enter it but cannot list it. The shell expands the `*` wildcard *before* `sudo` runs, as my user, so it found no matches and passed the literal text `*.qcow2` to the command. Fix: name the files explicitly (or expand the wildcard inside a root shell).
 
-## Roadmap
+## Phase 2 — Attacker and target VMs (done)
+
+| VM | RAM / CPU | Disk bus | NIC model | Firmware |
+|---|---|---|---|---|
+| metasploitable2 | 1 GiB / 1 | IDE | e1000 | BIOS |
+| kali | 2 GiB / 2 | VirtIO | VirtIO | default of the image |
+
+Metasploitable is a 2008-era system, so it needed legacy virtual hardware (IDE disk, e1000 NIC) to boot. Kali has a modern kernel and works with VirtIO defaults.
+
+### Validation of the isolated network
+
+- Both VMs sit on `soc-lab-net` (`virsh domiflist <vm>`), addresses come from the DHCP range (`virsh net-dhcp-leases soc-lab-net`).
+- Kali → Metasploitable ping: **works**.
+- Ping to `8.8.8.8` from either VM: **`Network is unreachable`**, which confirms there is no route out of the lab.
+
+### Troubleshooting log
+
+**Kali got an address in `192.168.122.0/24` instead of `192.168.100.0/24`.**
+That range belongs to libvirt's `default` NAT network, so the VM had been attached to the wrong network (the wizard preselects `default`). Fixed by changing the NIC's network source to `soc-lab-net`. Lesson: the IP range tells you which network a VM is on.
+
+**Three different ping failures, three different meanings:**
+
+| Message | Meaning |
+|---|---|
+| `Network is unreachable` | No route to the destination; the packet is never sent |
+| Timeout / 100% loss, no error | The packet leaves, something silently drops it |
+| `Destination ... unreachable` | A device on the path actively rejects it |
+
+**`virsh domiflist kali` failed ("failed to get domain").** virt-manager had named the VM `debian13`. Renamed it to `kali` so the GUI name and the `virsh` name match.
+
+### First scan (reconnaissance)
+
+`nmap -sV` against Metasploitable (from Kali, inside the isolated network) found ~23 open TCP ports, including FTP, Telnet, SMB, NFS, MySQL, PostgreSQL, VNC, and the legacy r-services (512–514). Services were grouped by risk: remote access (cleartext vs encrypted), file sharing, databases, and web.
+
+Key takeaway: *open* is a technical state (a process is listening); *exposed* depends
+
+## Roadmap update
 
 - [x] Verify KVM and install the virtualization stack
 - [x] Storage pool on a dedicated disk
